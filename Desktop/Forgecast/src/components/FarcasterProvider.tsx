@@ -1,9 +1,21 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, createContext, useContext } from 'react';
 import sdk from '@farcaster/miniapp-sdk';
 
 type FrameContext = Awaited<typeof sdk.context>;
+
+interface FarcasterContextType {
+  context: FrameContext | undefined;
+  isSDKLoaded: boolean;
+}
+
+const FarcasterContext = createContext<FarcasterContextType>({
+  context: undefined,
+  isSDKLoaded: false,
+});
+
+export const useFarcasterContext = () => useContext(FarcasterContext);
 
 export function FarcasterProvider({ children }: { children: React.ReactNode }) {
   const [isSDKLoaded, setIsSDKLoaded] = useState(false);
@@ -11,14 +23,19 @@ export function FarcasterProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const load = async () => {
-      setContext(await sdk.context);
+      const ctx = await sdk.context;
+      setContext(ctx);
       sdk.actions.ready();
+      setIsSDKLoaded(true);
     };
     if (sdk && !isSDKLoaded) {
-      setIsSDKLoaded(true);
       load();
     }
   }, [isSDKLoaded]);
 
-  return <>{children}</>;
+  return (
+    <FarcasterContext.Provider value={{ context, isSDKLoaded }}>
+      {children}
+    </FarcasterContext.Provider>
+  );
 }

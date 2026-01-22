@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { base } from 'wagmi/chains';
 import { http, createConfig, WagmiProvider } from 'wagmi';
 import { farcasterMiniApp } from '@farcaster/miniapp-wagmi-connector';
+import { coinbaseWallet, injected } from 'wagmi/connectors';
 import { useState, type ReactNode } from 'react';
 
 const config = createConfig({
@@ -12,7 +13,11 @@ const config = createConfig({
   transports: {
     [base.id]: http(),
   },
-  connectors: [farcasterMiniApp()],
+  connectors: [
+    farcasterMiniApp(),
+    coinbaseWallet({ appName: 'Forgecast' }),
+    injected(),
+  ],
 });
 
 export function Providers({ children }: { children: ReactNode }) {

@@ -1,8 +1,7 @@
 'use client';
 
 import React from 'react';
-import BottomNav from '@/components/BottomNav';
-import { ShoppingBag, Star, Package } from 'lucide-react';
+import { ShoppingBag, Star, Package, Rocket } from 'lucide-react';
 
 export default function ShopPage() {
   return (
@@ -20,28 +19,6 @@ export default function ShopPage() {
       {/* Main Content */}
       <main className="p-4 space-y-6">
         
-        {/* Fees Section */}
-        <section className="space-y-3">
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Fees</h2>
-          <div className="bg-card border border-border rounded-xl p-4">
-             <div className="flex items-start gap-4">
-                <div className="bg-primary/10 p-3 rounded-full text-primary">
-                  <Star size={20} />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-foreground">Sign-In Fee</h3>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    A small platform fee is required to verify identity and prevent spam.
-                  </p>
-                  <div className="mt-3 flex items-center gap-2">
-                    <span className="text-lg font-mono font-bold text-foreground">$0.20</span>
-                    <span className="text-xs bg-secondary/20 text-secondary px-2 py-1 rounded">ETH equivalent</span>
-                  </div>
-                </div>
-             </div>
-          </div>
-        </section>
-
         {/* Boosts Section */}
         <section className="space-y-3">
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Boosts</h2>
@@ -82,8 +59,6 @@ export default function ShopPage() {
         </section>
 
       </main>
-
-      <BottomNav />
     </div>
   );
 }

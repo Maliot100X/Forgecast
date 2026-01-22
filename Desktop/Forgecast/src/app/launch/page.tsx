@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import BottomNav from '@/components/BottomNav';
 import { Rocket, Upload, AlertCircle, CheckCircle2 } from 'lucide-react';
 
 export default function LaunchPage() {
@@ -121,8 +120,6 @@ export default function LaunchPage() {
           <p>Deploying on Zora Network • Base Mainnet</p>
         </div>
       </main>
-
-      <BottomNav />
     </div>
   );
 }

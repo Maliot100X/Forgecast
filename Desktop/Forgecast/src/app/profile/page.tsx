@@ -1,28 +1,12 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import sdk from '@farcaster/miniapp-sdk';
+import { useFarcasterContext } from '@/components/FarcasterProvider';
 import Image from 'next/image';
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
 import { useQuery } from '@tanstack/react-query';
-import { Layers, Wallet, RefreshCw, MessageSquare, LogOut } from 'lucide-react';
+import { Wallet, RefreshCw, LogOut } from 'lucide-react';
 import AIChat from '@/components/AIChat';
-
-// PAYMENT LAYER PREP
-const SIGN_IN_FEE = 0.20; // USD
-const TREASURY_ADDRESS = '0x0000000000000000000000000000000000000000'; // TODO: Replace with provided Zora ETH wallet
-const FEE_DISTRIBUTION = {
-  treasury: 1.0, // 100% to treasury initially
-};
-
-type FrameContext = Awaited<typeof sdk.context>;
-
-interface UserProfile {
-  fid: number;
-  username: string;
-  display_name: string;
-  pfp_url: string;
-}
 
 interface CoinLog {
   args: {
@@ -40,12 +24,8 @@ function formatAddress(addr: string) {
 }
 
 export default function ProfilePage() {
-  const [context, setContext] = useState<FrameContext>();
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  
-  const { address, isConnected, isConnecting } = useAccount();
+  const { context, isSDKLoaded } = useFarcasterContext();
+  const { address, isConnected } = useAccount();
   const { disconnect } = useDisconnect();
   const { connect, connectors } = useConnect();
   
@@ -75,53 +55,15 @@ export default function ProfilePage() {
     enabled: !!address,
   });
 
-  useEffect(() => {
-    const loadContext = async () => {
-      try {
-        const ctx = await sdk.context;
-        setContext(ctx);
-        
-        if (ctx?.user?.fid) {
-          fetchProfile(ctx.user.fid);
-        } else {
-            setLoading(false);
-        }
-      } catch (err) {
-        console.error('Error loading context:', err);
-        setError('Failed to load Farcaster context');
-        setLoading(false);
-      }
-    };
-
-    loadContext();
-  }, []);
-
-  const fetchProfile = async (fid: number) => {
-    try {
-      setLoading(true);
-      const res = await fetch(`/api/user?fid=${fid}`);
-      if (!res.ok) throw new Error('Failed to fetch profile');
-      const data = await res.json();
-      setProfile(data);
-    } catch (err) {
-      console.error(err);
-      setError('Failed to load profile');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleSync = useCallback(() => {
-    if (context?.user?.fid) {
-      fetchProfile(context.user.fid);
-    }
     if (address) {
         refetchCreated();
         refetchHoldings();
     }
-  }, [context, address, refetchCreated, refetchHoldings]);
+    // Context is auto-managed by SDK, but we can trigger a visual refresh effect if needed
+  }, [address, refetchCreated, refetchHoldings]);
 
-  if (loading && !profile) {
+  if (!isSDKLoaded) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -129,48 +71,49 @@ export default function ProfilePage() {
     );
   }
 
+  const user = context?.user;
+
   return (
     <div className="p-4 space-y-6 pb-24">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Profile</h1>
         <button 
           onClick={handleSync}
-          className="p-2 text-primary hover:bg-primary/10 rounded-full transition-colors"
+          className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 text-primary rounded-full text-xs font-medium hover:bg-primary/20 transition-colors"
           title="Sync Profile"
         >
-          <RefreshCw size={20} />
+          <RefreshCw size={14} />
+          Sync Farcaster
         </button>
       </div>
       
-      {error && (
-        <div className="p-4 bg-red-50 text-red-500 rounded-lg">
-          {error}
-        </div>
-      )}
-
-      {profile && (
+      {user ? (
         <div className="bg-card border border-border rounded-lg p-6 space-y-4">
           <div className="flex items-center space-x-4">
-            {profile.pfp_url && (
+            {user.pfpUrl && (
               <Image
-                src={profile.pfp_url}
-                alt={profile.display_name}
+                src={user.pfpUrl}
+                alt={user.displayName || 'User'}
                 width={64}
                 height={64}
                 className="rounded-full"
               />
             )}
             <div>
-              <h2 className="text-xl font-semibold">{profile.display_name}</h2>
-              <p className="text-muted-foreground">@{profile.username}</p>
+              <h2 className="text-xl font-semibold">{user.displayName}</h2>
+              <p className="text-muted-foreground">@{user.username}</p>
             </div>
           </div>
           
           <div className="grid grid-cols-1 gap-2">
             <div className="pt-2 border-t border-border">
-              <p className="text-xs text-muted-foreground">Farcaster ID: <span className="font-mono text-foreground">{profile.fid}</span></p>
+              <p className="text-xs text-muted-foreground">Farcaster ID: <span className="font-mono text-foreground">{user.fid}</span></p>
             </div>
           </div>
+        </div>
+      ) : (
+        <div className="bg-yellow-500/10 text-yellow-500 p-4 rounded-lg text-sm">
+          Could not load Farcaster profile. Please try refreshing.
         </div>
       )}
 
@@ -196,17 +139,25 @@ export default function ProfilePage() {
           </div>
         ) : (
           <div className="space-y-3">
-             <p className="text-sm text-muted-foreground">Connect to view assets</p>
+             <p className="text-sm text-muted-foreground">Connect a wallet to view assets</p>
              <div className="flex flex-col gap-2">
               {connectors
-                .filter(c => ['Farcaster', 'Coinbase Wallet', 'MetaMask'].some(name => c.name.includes(name)))
+                .filter(c => c.id === 'farcaster' || c.id === 'coinbaseWalletSDK' || c.id === 'io.metamask' || c.name === 'Coinbase Wallet' || c.name === 'MetaMask')
+                // Sort: Farcaster -> Coinbase -> MetaMask
+                .sort((a, b) => {
+                   const order = { 'farcaster': 1, 'coinbaseWalletSDK': 2, 'io.metamask': 3 };
+                   // @ts-ignore
+                   return (order[a.id] || 99) - (order[b.id] || 99);
+                })
                 .map((connector) => (
                 <button
                   key={connector.uid}
                   onClick={() => connect({ connector })}
                   className="w-full flex items-center justify-between p-3 bg-secondary/5 hover:bg-secondary/10 rounded-lg transition-colors border border-border"
                 >
-                  <span className="text-sm font-medium">{connector.name}</span>
+                  <span className="text-sm font-medium">
+                    {connector.name === 'Coinbase Wallet' ? 'Base Mini Wallet' : connector.name}
+                  </span>
                   <div className="w-2 h-2 rounded-full bg-secondary/50"></div>
                 </button>
               ))}
@@ -216,7 +167,7 @@ export default function ProfilePage() {
       </div>
 
       {!isConnected ? (
-        null // Already showed connect options above
+        null 
       ) : (
         <div className="space-y-4">
           <div className="flex space-x-2 border-b border-border pb-1">
@@ -279,9 +230,9 @@ export default function ProfilePage() {
       )}
 
       {/* AI Chat Integration */}
-        <div className="mt-6">
-          <AIChat />
-        </div>
+      <div className="mt-6">
+        <AIChat />
+      </div>
     </div>
   );
 }

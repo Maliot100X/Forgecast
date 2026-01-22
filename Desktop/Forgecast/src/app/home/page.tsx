@@ -100,12 +100,12 @@ export default function HomePage() {
             Failed to load coins.
           </div>
         ) : activeTab === 'boosted' ? (
-          <div className="text-center py-12 bg-muted/30 rounded-xl border border-dashed border-border">
-            <p className="text-muted-foreground text-sm">Boosted coins coming soon</p>
+          <div className="text-center py-12">
+            <p className="text-muted-foreground text-sm">No boosted coins yet.</p>
           </div>
         ) : !displayCoins || displayCoins.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
-            No coins found.
+            No coins yet.
           </div>
         ) : (
           <div className="space-y-3">
